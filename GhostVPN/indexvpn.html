@@ -1,0 +1,1048 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GhostVPN</title>
+<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=JetBrains+Mono:wght@400;600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:     #080c14;
+  --bg2:    #0d1320;
+  --bg3:    #111827;
+  --border: #1e2d45;
+  --border2:#243350;
+  --accent: #00d4ff;
+  --accent2:#0099bb;
+  --green:  #00e676;
+  --red:    #ff3d5a;
+  --yellow: #ffd740;
+  --text:   #e2e8f0;
+  --muted:  #64748b;
+  --muted2: #94a3b8;
+  --card:   #0f1929;
+  --card2:  #131e2e;
+  --glow:   0 0 20px rgba(0,212,255,0.15);
+  --glow-g: 0 0 20px rgba(0,230,118,0.2);
+  --glow-r: 0 0 20px rgba(255,61,90,0.2);
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: 'Inter', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+body::before {
+  content: '';
+  position: fixed; inset: 0;
+  background-image:
+    linear-gradient(rgba(0,212,255,0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0,212,255,0.03) 1px, transparent 1px);
+  background-size: 40px 40px;
+  pointer-events: none; z-index: 0;
+}
+.app {
+  position: relative; z-index: 1;
+  max-width: 500px; margin: 0 auto;
+  min-height: 100vh; padding-bottom: 24px;
+}
+
+/* ── HEADER ── */
+.header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 18px 20px 16px;
+  border-bottom: 1px solid var(--border);
+  background: linear-gradient(180deg, #0a1020 0%, transparent 100%);
+}
+.logo { display: flex; align-items: center; gap: 10px; }
+.logo-icon {
+  width: 36px; height: 36px;
+  background: linear-gradient(135deg, var(--accent), #0044ff);
+  border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 18px; box-shadow: var(--glow);
+}
+.logo-text { font-family: 'Rajdhani', sans-serif; font-size: 20px; font-weight: 700; letter-spacing: 1px; }
+.logo-sub  { font-size: 10px; color: var(--muted); letter-spacing: 2px; text-transform: uppercase; margin-top: -2px; }
+.header-badge {
+  font-family: 'JetBrains Mono', monospace; font-size: 10px;
+  padding: 4px 10px; border-radius: 20px;
+  border: 1px solid var(--border2);
+  color: var(--muted2); background: var(--bg2); letter-spacing: 1px;
+}
+
+/* ── MAP ── */
+.map-wrap {
+  margin: 16px 16px 0; border-radius: 12px; overflow: hidden;
+  border: 1px solid var(--border); background: var(--bg2);
+  position: relative; height: 170px;
+}
+.map-wrap svg { width: 100%; height: 100%; display: block; }
+.map-label {
+  position: absolute; bottom: 8px; right: 12px;
+  font-family: 'JetBrains Mono', monospace; font-size: 10px;
+  color: var(--muted); letter-spacing: 1px;
+}
+
+/* ── STATUS BAR ── */
+.status-bar {
+  margin: 12px 16px 0; padding: 14px 16px;
+  background: var(--card); border-radius: 12px;
+  border: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: space-between;
+}
+.s-left { display: flex; align-items: center; gap: 12px; }
+.pulse-ring {
+  width: 40px; height: 40px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  position: relative; flex-shrink: 0;
+}
+.pulse-ring.off { background: rgba(255,61,90,0.1); border: 1px solid rgba(255,61,90,0.3); }
+.pulse-ring.on  { background: rgba(0,230,118,0.1); border: 1px solid rgba(0,230,118,0.3); }
+.pulse-ring .dot { width: 12px; height: 12px; border-radius: 50%; }
+.pulse-ring.off .dot { background: var(--red); }
+.pulse-ring.on  .dot { background: var(--green); animation: pulse 2s infinite; }
+@keyframes pulse {
+  0%,100% { box-shadow: 0 0 0 0 rgba(0,230,118,0.4); }
+  50%      { box-shadow: 0 0 0 8px rgba(0,230,118,0); }
+}
+.s-info { display: flex; flex-direction: column; gap: 2px; }
+.s-title { font-weight: 600; font-size: 14px; }
+.s-sub   { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--muted2); }
+.timer-block { text-align: right; }
+.timer {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 20px; font-weight: 600; color: var(--accent); letter-spacing: 2px;
+}
+.timer-label { font-size: 9px; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; margin-top: 1px; }
+
+/* ── SESSION BAR ── */
+.session-bar {
+  margin: 10px 16px 0; height: 3px;
+  background: var(--bg3); border-radius: 2px; overflow: hidden; display: none;
+}
+.session-fill {
+  height: 100%; width: 0%;
+  background: linear-gradient(90deg, var(--accent), var(--green));
+  transition: width 1s linear; border-radius: 2px;
+}
+.session-bar.show { display: block; }
+
+/* ── PROFILE ROW ── */
+.profile-row {
+  display: flex; gap: 8px; padding: 10px 16px 0; align-items: stretch;
+}
+
+/* Client selector — custom styled */
+.client-select-wrap {
+  flex: 1; position: relative;
+}
+.client-select-wrap select {
+  width: 100%; height: 100%;
+  padding: 9px 32px 9px 12px;
+  background: var(--bg2);
+  border: 1px solid var(--border2);
+  border-radius: 7px;
+  color: var(--text);
+  font-size: 12px;
+  font-family: 'JetBrains Mono', monospace;
+  outline: none;
+  appearance: none;
+  -webkit-appearance: none;
+  cursor: pointer;
+  transition: border-color 0.2s, background 0.2s;
+}
+.client-select-wrap select:hover:not(:disabled) {
+  border-color: var(--accent);
+  background: rgba(0,212,255,0.04);
+}
+.client-select-wrap select:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px rgba(0,212,255,0.1);
+}
+.client-select-wrap select:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+/* Custom dropdown arrow */
+.client-select-wrap::after {
+  content: '▾';
+  position: absolute; right: 10px; top: 50%;
+  transform: translateY(-50%);
+  color: var(--muted2); font-size: 12px;
+  pointer-events: none;
+}
+/* Style the options */
+.client-select-wrap select option {
+  background: #0d1320;
+  color: var(--text);
+  padding: 8px;
+}
+
+/* Split/Full tunnel toggle pill */
+.tunnel-toggle {
+  display: flex;
+  background: var(--bg2);
+  border: 1px solid var(--border2);
+  border-radius: 7px;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+.tunnel-btn {
+  padding: 9px 12px;
+  font-size: 11px;
+  font-family: 'JetBrains Mono', monospace;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  cursor: pointer;
+  border: none;
+  background: transparent;
+  color: var(--muted2);
+  transition: all 0.2s;
+  white-space: nowrap;
+  user-select: none;
+}
+.tunnel-btn:hover:not(:disabled) {
+  color: var(--text);
+  background: rgba(255,255,255,0.04);
+}
+.tunnel-btn.active-full {
+  background: rgba(0,212,255,0.12);
+  color: var(--accent);
+}
+.tunnel-btn:first-child {
+  border-right: 1px solid var(--border2);
+}
+.tunnel-btn.active-split {
+  background: rgba(0,230,118,0.1);
+  color: var(--green);
+}
+.tunnel-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+.tunnel-divider {
+  width: 1px;
+  background: var(--border2);
+  flex-shrink: 0;
+}
+
+/* ── CONNECT BUTTON ── */
+.btn-wrap { padding: 14px 16px 0; }
+.connect-btn {
+  width: 100%; padding: 16px;
+  border: none; border-radius: 10px;
+  font-family: 'Rajdhani', sans-serif; font-size: 16px; font-weight: 700;
+  letter-spacing: 3px; cursor: pointer; transition: all 0.25s ease;
+  position: relative; overflow: hidden;
+}
+.connect-btn::after {
+  content: ''; position: absolute; inset: 0;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.06), transparent);
+  transform: translateX(-100%); transition: transform 0.4s;
+}
+.connect-btn:hover::after { transform: translateX(100%); }
+.connect-btn.idle {
+  background: linear-gradient(135deg, #003d7a, #0066cc);
+  color: white; box-shadow: 0 4px 24px rgba(0,102,204,0.35);
+}
+.connect-btn.idle:hover { transform: translateY(-1px); box-shadow: 0 6px 28px rgba(0,102,204,0.5); }
+.connect-btn.connecting {
+  background: linear-gradient(135deg, #1a2a3a, #233044);
+  color: var(--muted2); cursor: not-allowed;
+}
+.connect-btn.connecting span { display: inline-flex; gap: 6px; align-items: center; }
+.connect-btn.connecting span::after {
+  content: ''; width: 14px; height: 14px; border-radius: 50%;
+  border: 2px solid var(--muted); border-top-color: var(--accent);
+  animation: spin 0.8s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+.connect-btn.live {
+  background: linear-gradient(135deg, #1a0a0e, #3d0015);
+  color: var(--red); border: 1px solid rgba(255,61,90,0.3);
+  box-shadow: 0 4px 24px rgba(255,61,90,0.2);
+}
+.connect-btn.live:hover { transform: translateY(-1px); box-shadow: 0 6px 28px rgba(255,61,90,0.35); }
+
+/* ── METRICS GRID ── */
+.grid {
+  display: grid; grid-template-columns: 1fr 1fr;
+  gap: 10px; padding: 14px 16px 0;
+}
+.mcard {
+  background: var(--card); border-radius: 10px;
+  border: 1px solid var(--border); padding: 12px 14px;
+}
+.mcard-label { font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 6px; }
+.mcard-value { font-family: 'JetBrains Mono', monospace; font-size: 14px; font-weight: 600; color: var(--text); }
+.mcard-value.accent { color: var(--accent); }
+.mcard-value.green  { color: var(--green); }
+
+/* ── SECTIONS ── */
+.section {
+  margin: 12px 16px 0; border-radius: 10px;
+  border: 1px solid var(--border); overflow: hidden;
+}
+.sec-head {
+  padding: 10px 14px; background: var(--bg2);
+  font-size: 11px; font-weight: 600;
+  color: var(--accent); text-transform: uppercase; letter-spacing: 1.5px;
+  border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; gap: 6px;
+}
+.sec-body { background: var(--card); padding: 14px; }
+
+/* ── ROWS ── */
+.row {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 8px 0; border-bottom: 1px solid var(--bg3);
+}
+.row:last-child { border-bottom: none; }
+.rlabel { font-size: 12px; color: var(--muted2); }
+.rvalue { font-family: 'JetBrains Mono', monospace; font-size: 12px; font-weight: 600; }
+
+/* ── BADGES ── */
+.badge {
+  font-size: 11px; padding: 3px 10px; border-radius: 20px; font-weight: 600;
+  font-family: 'JetBrains Mono', monospace; letter-spacing: 0.5px;
+}
+.badge.ok   { background: rgba(0,230,118,0.12); color: var(--green); border: 1px solid rgba(0,230,118,0.25); }
+.badge.warn { background: rgba(255,61,90,0.12);  color: var(--red);   border: 1px solid rgba(255,61,90,0.25); }
+.badge.info { background: rgba(0,212,255,0.1);   color: var(--accent);border: 1px solid rgba(0,212,255,0.2); }
+.badge.idle { background: var(--bg3); color: var(--muted); border: 1px solid var(--border); }
+
+/* ── SPINNERS ── */
+.leak-loading { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--muted2); }
+.spin-sm {
+  width: 12px; height: 12px; border-radius: 50%;
+  border: 2px solid var(--border2); border-top-color: var(--accent);
+  animation: spin 0.7s linear infinite; flex-shrink: 0;
+  display: inline-block;
+}
+
+/* ── BUTTONS ── */
+.check-btn {
+  margin-top: 12px; width: 100%; padding: 9px; background: transparent;
+  border: 1px solid var(--border2); border-radius: 7px;
+  color: var(--accent); font-size: 12px; font-weight: 500; cursor: pointer;
+  transition: all 0.2s; letter-spacing: 0.5px;
+}
+.check-btn:hover { background: rgba(0,212,255,0.06); border-color: var(--accent); }
+
+/* ── SETTINGS TOGGLES ── */
+.trow {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 10px 0; border-bottom: 1px solid var(--bg3);
+}
+.trow:last-child { border-bottom: none; }
+.tlabel { font-size: 13px; color: var(--text); }
+.tsub   { font-size: 11px; color: var(--muted); margin-top: 1px; }
+.toggle {
+  width: 44px; height: 24px; border-radius: 12px;
+  background: var(--bg3); border: 1px solid var(--border);
+  position: relative; cursor: pointer; transition: all 0.25s; flex-shrink: 0;
+}
+.toggle::after {
+  content: ''; position: absolute;
+  width: 18px; height: 18px; border-radius: 50%;
+  background: var(--muted); top: 2px; left: 2px;
+  transition: all 0.25s; box-shadow: 0 1px 4px rgba(0,0,0,0.4);
+}
+.toggle.on { background: rgba(0,212,255,0.2); border-color: var(--accent2); }
+.toggle.on::after { left: 22px; background: var(--accent); }
+
+/* ── BLOCK/UNBLOCK ── */
+.block-row { display: flex; gap: 8px; margin-top: 12px; }
+.block-input {
+  flex: 1; padding: 9px 12px;
+  background: var(--bg2); border: 1px solid var(--border2);
+  border-radius: 7px; color: var(--text); font-size: 12px;
+  font-family: 'JetBrains Mono', monospace;
+  transition: border-color 0.2s; outline: none;
+}
+.block-input:focus { border-color: var(--accent); }
+.block-input::placeholder { color: var(--muted); }
+.bbtn, .ubbtn {
+  padding: 9px 14px; border-radius: 7px;
+  font-size: 11px; font-weight: 600; cursor: pointer;
+  transition: all 0.2s; border: 1px solid; letter-spacing: 0.5px; white-space: nowrap;
+}
+.bbtn  { background: rgba(0,212,255,0.08); color: var(--accent); border-color: rgba(0,212,255,0.25); }
+.bbtn:hover  { background: rgba(0,212,255,0.15); }
+.ubbtn { background: rgba(255,61,90,0.08);  color: var(--red);   border-color: rgba(255,61,90,0.25); }
+.ubbtn:hover { background: rgba(255,61,90,0.15); }
+
+.show-btn {
+  margin-top: 10px; width: 100%; padding: 9px; background: transparent;
+  border: 1px solid var(--border2); border-radius: 7px;
+  color: var(--green); font-size: 12px; cursor: pointer;
+  transition: all 0.2s; letter-spacing: 0.5px;
+}
+.show-btn:hover { background: rgba(0,230,118,0.06); border-color: var(--green); }
+.blocked-panel { margin-top: 10px; display: none; flex-direction: column; gap: 8px; }
+.blocked-panel.visible { display: flex; }
+.blk-section { background: var(--bg2); border: 1px solid var(--border); border-radius: 7px; overflow: hidden; }
+.blk-section-head {
+  padding: 6px 10px; font-size: 9px; font-weight: 600;
+  text-transform: uppercase; letter-spacing: 1.5px;
+  display: flex; align-items: center; justify-content: space-between;
+  border-bottom: 1px solid var(--border);
+}
+.blk-section-head.domains { color: var(--red);     background: rgba(255,61,90,0.05); }
+.blk-section-head.ips      { color: var(--muted2); background: rgba(0,212,255,0.03); }
+.blk-items { max-height: 90px; overflow-y: auto; padding: 6px 10px; }
+.blk-item {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 4px 0; border-bottom: 1px solid rgba(255,255,255,0.03);
+  font-family: 'JetBrains Mono', monospace; font-size: 11px;
+}
+.blk-item:last-child { border-bottom: none; }
+.blk-item-name { color: var(--text); }
+.blk-item-name.domain { color: var(--red); }
+.blk-item-meta { color: var(--muted); font-size: 10px; }
+.blk-empty { padding: 8px 10px; font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--muted); font-style: italic; }
+.blk-loading { padding: 10px; display: flex; align-items: center; gap: 8px; font-size: 11px; color: var(--muted2); font-family: 'JetBrains Mono', monospace; }
+
+/* ── LOG BOX ── */
+.log-box {
+  background: #060a10;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px; color: #64748b;
+  padding: 10px 14px; height: 160px;
+  overflow-y: auto; white-space: pre-wrap;
+  word-break: break-all; line-height: 1.7;
+}
+.log-header {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 8px 14px; border-bottom: 1px solid var(--border);
+}
+.log-meta { font-size: 10px; color: var(--muted2); font-family: 'JetBrains Mono', monospace; }
+.log-refresh-btn {
+  padding: 5px 12px; background: transparent;
+  border: 1px solid var(--border2); border-radius: 6px;
+  color: var(--accent); font-size: 11px; cursor: pointer; transition: all 0.2s;
+}
+.log-refresh-btn:hover { background: rgba(0,212,255,0.06); }
+
+/* ── TOAST ── */
+#toast {
+  position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
+  font-size: 12px; padding: 10px 20px; border-radius: 8px;
+  font-family: 'JetBrains Mono', monospace;
+  pointer-events: none; opacity: 0;
+  transition: opacity 0.3s; z-index: 99; white-space: nowrap;
+}
+#toast.show { opacity: 1; }
+#toast.ok  { background: rgba(0,230,118,0.15); color: var(--green); border: 1px solid rgba(0,230,118,0.3); }
+#toast.err { background: rgba(255,61,90,0.15);  color: var(--red);  border: 1px solid rgba(255,61,90,0.3); }
+#toast.inf { background: rgba(0,212,255,0.1);   color: var(--accent);border: 1px solid rgba(0,212,255,0.25); }
+
+/* ── FOOTER ── */
+.footer {
+  margin: 20px 16px 0; padding: 12px 16px;
+  background: var(--bg2); border-radius: 10px;
+  border: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: space-between;
+}
+.footer-left  { font-size: 10px; color: var(--muted); letter-spacing: 1px; }
+.footer-right { font-size: 10px; color: var(--muted); font-family: 'JetBrains Mono', monospace; }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <div class="header">
+    <div class="logo">
+      <div class="logo-icon">&#128274;</div>
+      <div>
+        <div class="logo-text">GhostVPN</div>
+        <div class="logo-sub">Secure &amp; Private</div>
+      </div>
+    </div>
+    <div class="header-badge" id="verBadge">v1.0 &middot; AWS EU</div>
+  </div>
+
+  <div class="map-wrap">
+    <svg viewBox="0 0 480 170" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg">
+      <rect width="480" height="170" fill="#0d1320"/>
+      <g stroke="#1e2d45" stroke-width="0.5">
+        <line x1="0" y1="42" x2="480" y2="42"/>
+        <line x1="0" y1="85" x2="480" y2="85"/>
+        <line x1="0" y1="127" x2="480" y2="127"/>
+        <line x1="96" y1="0" x2="96" y2="170"/>
+        <line x1="192" y1="0" x2="192" y2="170"/>
+        <line x1="288" y1="0" x2="288" y2="170"/>
+        <line x1="384" y1="0" x2="384" y2="170"/>
+      </g>
+      <path d="M44,18 Q70,11 98,15 Q130,20 148,40 Q162,57 159,78 Q154,100 140,110 Q118,120 92,112 Q64,103 47,82 Q33,63 35,43Z" fill="#1a2d50" stroke="#243350" stroke-width="0.8"/>
+      <path d="M104,122 Q124,114 144,124 Q158,135 157,157 Q148,170 132,170 L110,170 Q95,160 90,143 Q96,130 104,122Z" fill="#1a2d50" stroke="#243350" stroke-width="0.8"/>
+      <path d="M202,16 Q220,9 240,14 Q255,20 259,33 Q262,44 255,54 Q245,63 231,64 Q215,64 206,54 Q197,43 199,30Z" fill="#1a2d50" stroke="#243350" stroke-width="0.8"/>
+      <path d="M208,72 Q228,64 248,72 Q264,82 265,103 Q267,127 257,146 Q245,164 228,168 Q210,169 200,153 Q189,136 189,113 Q198,78 208,72Z" fill="#1a2d50" stroke="#243350" stroke-width="0.8"/>
+      <path d="M266,10 Q308,3 354,7 Q395,11 418,28 Q434,41 430,59 Q422,78 398,86 Q366,96 332,92 Q292,88 268,70 Q252,54 256,31Z" fill="#1a2d50" stroke="#243350" stroke-width="0.8"/>
+      <path d="M368,128 Q390,120 412,126 Q427,135 428,152 Q426,168 412,174 Q394,180 376,174 Q358,165 358,148Z" fill="#1a2d50" stroke="#243350" stroke-width="0.8"/>
+      <circle cx="330" cy="60" r="6" fill="#00d4ff" stroke="#080c14" stroke-width="2"/>
+      <circle cx="330" cy="60" r="14" fill="#00d4ff" opacity="0.1">
+        <animate attributeName="r" values="6;18;6" dur="2.5s" repeatCount="indefinite"/>
+        <animate attributeName="opacity" values="0.15;0;0.15" dur="2.5s" repeatCount="indefinite"/>
+      </circle>
+      <text x="338" y="58" font-size="8" fill="#00d4ff" font-family="JetBrains Mono, monospace" font-weight="600">PK</text>
+      <circle cx="246" cy="18" r="5" fill="#ff3d5a" stroke="#080c14" stroke-width="2"/>
+      <circle cx="246" cy="18" r="12" fill="#ff3d5a" opacity="0.1">
+        <animate attributeName="r" values="5;15;5" dur="2.5s" repeatCount="indefinite" begin="0.8s"/>
+        <animate attributeName="opacity" values="0.15;0;0.15" dur="2.5s" repeatCount="indefinite" begin="0.8s"/>
+      </circle>
+      <text x="213" y="15" font-size="8" fill="#ff3d5a" font-family="JetBrains Mono, monospace" font-weight="600">SE</text>
+      <path d="M330,60 Q290,5 246,18" fill="none" stroke="#00d4ff" stroke-width="1.5" stroke-dasharray="8,5" opacity="0.6">
+        <animate attributeName="stroke-dashoffset" values="130;0" dur="2s" repeatCount="indefinite"/>
+      </path>
+    </svg>
+    <div class="map-label" id="mapLabel">Islamabad &rarr; Stockholm &middot; TCP 443</div>
+  </div>
+
+  <div class="status-bar" id="statusBar">
+    <div class="s-left">
+      <div class="pulse-ring off" id="pulseRing"><div class="dot"></div></div>
+      <div class="s-info">
+        <div class="s-title" id="sTitle">Disconnected</div>
+        <div class="s-sub" id="sSub">&mdash;</div>
+      </div>
+    </div>
+    <div class="timer-block">
+      <div class="timer" id="timerEl">00:00:00</div>
+      <div class="timer-label">Session</div>
+    </div>
+  </div>
+
+  <div class="session-bar" id="sessionBar">
+    <div class="session-fill" id="sessionFill"></div>
+  </div>
+
+  <div class="profile-row">
+    <div class="client-select-wrap">
+      <select id="clientSelect">
+        <option value="client1">client1 — Primary</option>
+        <option value="client2">client2 — Secondary</option>
+      </select>
+    </div>
+
+    <div class="tunnel-toggle" id="tunnelToggle">
+      <button class="tunnel-btn active-full" id="btnFull" onclick="setTunnel(false)">Full</button>
+      <button class="tunnel-btn" id="btnSplit" onclick="setTunnel(true)">Split</button>
+    </div>
+  </div>
+
+  <div class="btn-wrap">
+    <button class="connect-btn idle" id="connBtn" onclick="toggleVPN()">CONNECT</button>
+  </div>
+
+  <div class="grid">
+    <div class="mcard">
+      <div class="mcard-label">&#8595; Download</div>
+      <div class="mcard-value accent" id="dlVal">-- KB</div>
+    </div>
+    <div class="mcard">
+      <div class="mcard-label">&#8593; Upload</div>
+      <div class="mcard-value accent" id="ulVal">-- KB</div>
+    </div>
+    <div class="mcard">
+      <div class="mcard-label">Cipher</div>
+      <div class="mcard-value green" style="font-size:12px;">AES-256-CBC</div>
+    </div>
+    <div class="mcard">
+      <div class="mcard-label">Protocol</div>
+      <div class="mcard-value green" style="font-size:12px;">TCP / 443</div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="sec-head">&#127760; IP / DNS / IPv6 Leak Checker</div>
+    <div class="sec-body">
+      <div class="row">
+        <span class="rlabel">Your IP</span>
+        <span class="rvalue" id="curIp">
+          <span class="leak-loading"><span class="spin-sm"></span> Checking&hellip;</span>
+        </span>
+      </div>
+      <div class="row">
+        <span class="rlabel">VPN Server</span>
+        <span class="rvalue" style="color:var(--muted2);">51.20.8.80</span>
+      </div>
+      <div class="row">
+        <span class="rlabel">Location</span>
+        <span class="rvalue" id="geoVal" style="color:var(--muted2);">&mdash;</span>
+      </div>
+      <div class="row">
+        <span class="rlabel">IP Protection</span>
+        <span id="leakSt"><span class="badge idle">UNKNOWN</span></span>
+      </div>
+      <div class="row">
+        <span class="rlabel">DNS Leak</span>
+        <span id="dnsLeakSt"><span class="badge idle">UNKNOWN</span></span>
+      </div>
+      <div class="row">
+        <span class="rlabel">DNS Resolvers</span>
+        <span class="rvalue" id="dnsResolvers" style="color:var(--muted2);font-size:11px;">&mdash;</span>
+      </div>
+      <div class="row" style="border-bottom:none;">
+        <span class="rlabel">IPv6 Leak</span>
+        <span id="ipv6St"><span class="badge idle">UNKNOWN</span></span>
+      </div>
+      <button class="check-btn" id="checkBtn" onclick="checkLeak()">&#128269; Re-check All</button>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="sec-head">&#127968; Internal Resource Access</div>
+    <div class="sec-body">
+      <div class="row">
+        <span class="rlabel">Internal Host</span>
+        <span class="rvalue" style="color:var(--muted2);font-family:'JetBrains Mono',monospace;">10.8.0.1:8888</span>
+      </div>
+      <div class="row">
+        <span class="rlabel">Reachability</span>
+        <span id="internalSt"><span class="badge idle">UNKNOWN</span></span>
+      </div>
+      <div class="row" style="border-bottom:none;">
+        <span class="rlabel">Server Response</span>
+        <span class="rvalue" id="internalMsg" style="color:var(--muted2);font-size:11px;">&mdash;</span>
+      </div>
+      <button class="check-btn" onclick="checkInternal()">&#127968; Test Internal Access</button>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="sec-head">&#9881;&#65039; Settings</div>
+    <div class="sec-body">
+      <div class="trow">
+        <div>
+          <div class="tlabel">1-Hour Session Limit</div>
+          <div class="tsub">Auto-disconnect after 60 min</div>
+        </div>
+        <div class="toggle on" id="sessionLimit" onclick="this.classList.toggle('on')"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="sec-head">&#128683; IP/Domain Blocking</div>
+    <div class="sec-body">
+      <div class="row">
+        <span class="rlabel">Blocked Targets on Server</span>
+        <span class="rvalue" id="blkCount"><span class="badge idle">&hellip;</span></span>
+      </div>
+      <div class="block-row">
+        <input type="text" id="blkIp" class="block-input" placeholder="youtube.com &middot; 203.0.113.5 &middot; 1.2.3.0/24"/>
+        <button class="bbtn" onclick="handleBlockAction('/block')">Block</button>
+        <button class="ubbtn" onclick="handleBlockAction('/unblock')">Unblock</button>
+      </div>
+      <button class="show-btn" id="showBlkBtn" onclick="toggleBlockedPanel()">&#128203; Show Blocked Rules</button>
+      <div class="blocked-panel" id="blkPanel">
+        <div class="blk-loading" id="blkLoading"><span class="spin-sm"></span> Loading rules&hellip;</div>
+        <div class="blk-section" id="domainSection" style="display:none;">
+          <div class="blk-section-head domains">
+            <span>&#127760; Blocked Domains</span>
+            <span id="domainCount" class="badge warn">0</span>
+          </div>
+          <div class="blk-items" id="domainItems"></div>
+        </div>
+        <div class="blk-section" id="ipSection" style="display:none;">
+          <div class="blk-section-head ips">
+            <span>&#128274; Blocked IPs</span>
+            <span id="ipCount" class="badge info">0</span>
+          </div>
+          <div class="blk-items" id="ipItems"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="sec-head">&#128203; Logs &amp; Troubleshooting</div>
+    <div class="sec-body" style="padding:0;">
+      <div class="log-header">
+        <span class="log-meta" id="logMeta">&mdash;</span>
+        <button class="log-refresh-btn" onclick="loadLogs()">&#8635; Refresh</button>
+      </div>
+      <div class="log-box" id="logBox">Loading logs&hellip;</div>
+    </div>
+  </div>
+
+  <div class="footer">
+    <span class="footer-left">GhostVPN v1.0 &middot; AES-256-CBC &middot; TLS-Crypt</span>
+    <span class="footer-right">AWS &middot; eu-north-1</span>
+  </div>
+
+</div>
+<div id="toast"></div>
+<script>
+// ══════════════════════════════════════════════════════
+//  STATE ENGINE
+// ══════════════════════════════════════════════════════
+const BASE = 'http://127.0.0.1:5001';
+
+let isConn         = false;
+let blkPanelOpen   = false;
+let splitMode      = false; // false = full, true = split
+
+// ══════════════════════════════════════════════════════
+//  TOAST ALERTS
+// ══════════════════════════════════════════════════════
+function toast(msg, type = 'inf', ms = 3000) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.className = `show ${type}`;
+  clearTimeout(el._t);
+  el._t = setTimeout(() => { el.className = ''; }, ms);
+}
+
+// ══════════════════════════════════════════════════════
+//  SESSION TIMER
+// ══════════════════════════════════════════════════════
+let timerSec = 0, timerInt = null;
+const MAX_SEC = 3600;
+
+function startTimer(offset = 0) {
+  timerSec = offset;
+  clearInterval(timerInt);
+  document.getElementById('sessionBar').classList.add('show');
+  timerInt = setInterval(() => {
+    timerSec++;
+    document.getElementById('timerEl').textContent = fmt(timerSec);
+    const pct = Math.min(100, (timerSec / MAX_SEC) * 100);
+    document.getElementById('sessionFill').style.width = pct + '%';
+  }, 1000);
+}
+
+function stopTimer() {
+  clearInterval(timerInt);
+  timerSec = 0;
+  document.getElementById('timerEl').textContent = '00:00:00';
+  document.getElementById('sessionFill').style.width = '0%';
+  document.getElementById('sessionBar').classList.remove('show');
+}
+
+function fmt(s) {
+  const h  = Math.floor(s / 3600).toString().padStart(2, '0');
+  const m  = Math.floor((s % 3600) / 60).toString().padStart(2, '0');
+  const sc = (s % 60).toString().padStart(2, '0');
+  return `${h}:${m}:${sc}`;
+}
+
+// ══════════════════════════════════════════════════════
+//  TUNNEL SELECT FUNCTION (FIXED VISUAL CLASSIFICATION)
+// ══════════════════════════════════════════════════════
+function setTunnel(isSplit) {
+  if (isConn) {
+    toast('Disconnect first to change tunnel mode', 'err');
+    return;
+  }
+  splitMode = isSplit;
+  const btnFull  = document.getElementById('btnFull');
+  const btnSplit = document.getElementById('btnSplit');
+
+  // Always reset both first, then apply only the active one
+  btnFull.classList.remove('active-full');
+  btnSplit.classList.remove('active-split');
+
+  if (isSplit) {
+    btnSplit.classList.add('active-split');
+  } else {
+    btnFull.classList.add('active-full');
+  }
+}
+
+function lockControls(locked) {
+  const sel      = document.getElementById('clientSelect');
+  const btnFull  = document.getElementById('btnFull');
+  const btnSplit = document.getElementById('btnSplit');
+  sel.disabled      = locked;
+  // Only visually indicate locked state, but keep onclick working via setTunnel's own guard
+  btnFull.disabled  = locked;
+  btnSplit.disabled = locked;
+  // Add/remove a visual locked indicator on the tunnel toggle wrapper
+  const wrapper = document.getElementById('tunnelToggle');
+  if (locked) {
+    wrapper.style.opacity = '0.5';
+    wrapper.title = 'Disconnect first to change tunnel mode';
+  } else {
+    wrapper.style.opacity = '1';
+    wrapper.title = '';
+  }
+}
+
+// ══════════════════════════════════════════════════════
+//  CONNECT RENDER ENGINE
+// ══════════════════════════════════════════════════════
+async function toggleVPN() {
+  const btn = document.getElementById('connBtn');
+  const clientId = document.getElementById('clientSelect').value;
+
+  if (!isConn) {
+    btn.className = 'connect-btn connecting';
+    btn.innerHTML = '<span>CONNECTING</span>';
+    btn.disabled  = true;
+    lockControls(true);
+
+    try {
+      const res = await fetch(`${BASE}/connect`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ split: splitMode, client_id: clientId })
+      });
+      const data = await res.json();
+
+      if (data.status === 'connected' || data.status === 'already_connected') {
+        // If server enforces a specific mode back, use it, otherwise respect chosen state
+        if (data.split !== undefined) {
+          splitMode = data.split;
+        }
+        setTunnel(splitMode);
+        setUIVisualState(true, data.client_id || clientId);
+        toast(`Connected [${data.client_id || clientId} / ${splitMode ? 'Split' : 'Full'}]`, 'ok');
+      } else {
+        toast('Error: ' + (data.message || 'Verification Failed'), 'err');
+        setUIVisualState(false);
+        lockControls(false);
+      }
+    } catch (e) {
+      toast('Backend framework target offline', 'err');
+      setUIVisualState(false);
+      lockControls(false);
+    }
+  } else {
+    btn.disabled = true;
+    try { await fetch(`${BASE}/disconnect`, { method: 'POST' }); } catch (e) {}
+    setUIVisualState(false);
+    lockControls(false);
+    toast('Disconnected safely', 'inf');
+  }
+}
+
+function setUIVisualState(connected, clientId = 'client1') {
+  isConn = connected;
+  const btn  = document.getElementById('connBtn');
+  const ring = document.getElementById('pulseRing');
+  const title = document.getElementById('sTitle');
+  const sub   = document.getElementById('sSub');
+
+  if (connected) {
+    btn.className = 'connect-btn live';
+    btn.textContent = 'DISCONNECT';
+    btn.disabled = false;
+    ring.className = 'pulse-ring on';
+    title.textContent = 'Active Protected Tunnel';
+    sub.textContent = `${clientId.toUpperCase()} • ${splitMode ? 'SPLIT' : 'FULL'}`;
+    startTimer(0);
+  } else {
+    btn.className = 'connect-btn idle';
+    btn.textContent = 'CONNECT';
+    btn.disabled = false;
+    ring.className = 'pulse-ring off';
+    title.textContent = 'Disconnected';
+    sub.textContent = '—';
+    stopTimer();
+  }
+  setTimeout(checkLeak, 1000);
+}
+
+// ══════════════════════════════════════════════════════
+//  DIAGNOSTIC TELEMETRY
+// ══════════════════════════════════════════════════════
+async function checkStatus() {
+  try {
+    const res = await fetch(`${BASE}/status`);
+    const data = await res.json();
+    
+    document.getElementById('dlVal').textContent = data.download || '-- KB';
+    document.getElementById('ulVal').textContent = data.upload || '-- KB';
+    document.getElementById('blkCount').innerHTML = `<span class="badge info">${data.blocked_count || 0} active</span>`;
+
+    if (data.connected !== isConn) {
+      // Sync from background only on actual system-wide hook state switches
+      if (data.split !== undefined && !isConn) {
+        splitMode = data.split;
+        setTunnel(splitMode);
+      }
+      setUIVisualState(data.connected, data.client_id);
+      if(data.connected && data.timer_seconds) {
+         startTimer(data.timer_seconds);
+      }
+    }
+  } catch (e) {}
+}
+
+async function checkLeak() {
+  const curIp = document.getElementById('curIp');
+  const geoVal = document.getElementById('geoVal');
+  const leakSt = document.getElementById('leakSt');
+  const dnsLeakSt = document.getElementById('dnsLeakSt');
+  const dnsResolvers = document.getElementById('dnsResolvers');
+  const ipv6St = document.getElementById('ipv6St');
+
+  curIp.innerHTML = `<span class="leak-loading"><span class="spin-sm"></span> Analyzing...</span>`;
+
+  try {
+    const ipRes = await fetch(`${BASE}/ip`);
+    const ipData = await ipRes.json();
+    
+    curIp.textContent = ipData.ip || 'Unknown';
+    geoVal.textContent = (ipData.city || ipData.country) ? `${ipData.city}, ${ipData.country}` : 'Unknown Location';
+    
+    if (ipData.secure) {
+      curIp.style.color = 'var(--green)';
+      leakSt.innerHTML = `<span class="badge ok">SECURED</span>`;
+    } else {
+      curIp.style.color = 'var(--accent)';
+      leakSt.innerHTML = `<span class="badge warn">UNPROTECTED</span>`;
+    }
+
+    const dnsRes = await fetch(`${BASE}/dns_leak`);
+    const dnsData = await dnsRes.json();
+    if (dnsData.status === 'ok') {
+      if (dnsData.leak_detected) {
+        dnsLeakSt.innerHTML = `<span class="badge warn">LEAK DETECTED</span>`;
+        dnsResolvers.textContent = dnsData.servers.map(s => s.ip).join(', ') || 'Exposed Local IP';
+      } else {
+        dnsLeakSt.innerHTML = `<span class="badge ok">NO LEAK</span>`;
+        dnsResolvers.textContent = dnsData.servers.map(s => s.isp).join(', ') || 'VPN Resolvers Active';
+      }
+    }
+
+    const v6Res = await fetch(`${BASE}/ipv6_check`);
+    const v6Data = await v6Res.json();
+    if (v6Data.ipv6_exposed) {
+      ipv6St.innerHTML = `<span class="badge warn">EXPOSED</span>`;
+    } else {
+      ipv6St.innerHTML = `<span class="badge ok">SHIELDED</span>`;
+    }
+  } catch(e) {
+    curIp.textContent = 'Fetch failed';
+    leakSt.innerHTML = `<span class="badge idle">OFFLINE</span>`;
+  }
+}
+
+async function checkInternal() {
+  const internalSt = document.getElementById('internalSt');
+  const internalMsg = document.getElementById('internalMsg');
+  internalSt.innerHTML = `<span class="spin-sm"></span>`;
+  
+  try {
+    const res = await fetch(`${BASE}/ping_internal`);
+    const data = await res.json();
+    if (data.reachable) {
+      internalSt.innerHTML = `<span class="badge ok">REACHABLE</span>`;
+      internalMsg.textContent = data.response.message || 'Success';
+      internalMsg.style.color = 'var(--green)';
+    } else {
+      internalSt.innerHTML = `<span class="badge warn">UNREACHABLE</span>`;
+      internalMsg.textContent = 'Route down';
+      internalMsg.style.color = 'var(--muted)';
+    }
+  } catch (e) {
+    internalSt.innerHTML = `<span class="badge warn">ERROR</span>`;
+  }
+}
+
+// ══════════════════════════════════════════════════════
+//  FIREWALL TABLE CONTROLS
+// ══════════════════════════════════════════════════════
+async function handleBlockAction(endpoint) {
+  const input = document.getElementById('blkIp');
+  const val = input.value.trim();
+  if (!val) { toast('Please specify a domain or IP target', 'err'); return; }
+
+  try {
+    const res = await fetch(`${BASE}${endpoint}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ip: val })
+    });
+    const data = await res.json();
+    toast(`${val} layout updated successfully`, 'ok');
+    input.value = '';
+    if(blkPanelOpen) loadBlockedRules();
+    checkStatus();
+  } catch (e) {
+    toast('Firewall routing configuration failed', 'err');
+  }
+}
+
+function toggleBlockedPanel() {
+  const panel = document.getElementById('blkPanel');
+  blkPanelOpen = !blkPanelOpen;
+  if (blkPanelOpen) {
+    panel.classList.add('visible');
+    loadBlockedRules();
+  } else {
+    panel.classList.remove('visible');
+  }
+}
+
+async function loadBlockedRules() {
+  try {
+    const res = await fetch(`${BASE}/show_blocked`);
+    const data = await res.json();
+    
+    document.getElementById('blkLoading').style.display = 'none';
+    
+    const domSec = document.getElementById('domainSection');
+    const domItems = document.getElementById('domainItems');
+    domItems.innerHTML = '';
+    if (data.blocked_domains && data.blocked_domains.length > 0) {
+      domSec.style.display = 'block';
+      document.getElementById('domainCount').textContent = data.blocked_domains.length;
+      data.blocked_domains.forEach(d => {
+        domItems.innerHTML += `<div class="blk-item"><span class="blk-item-name domain">${d}</span></div>`;
+      });
+    } else {
+      domSec.style.display = 'block';
+      domItems.innerHTML = `<div class="blk-empty">No domains active</div>`;
+    }
+
+    const ipSec = document.getElementById('ipSection');
+    const ipItems = document.getElementById('ipItems');
+    ipItems.innerHTML = '';
+    if (data.blocked_ips && data.blocked_ips.length > 0) {
+      ipSec.style.display = 'block';
+      document.getElementById('ipCount').textContent = data.blocked_ips.length;
+      data.blocked_ips.forEach(ip => {
+        ipItems.innerHTML += `<div class="blk-item"><span class="blk-item-name">${ip}</span></div>`;
+      });
+    } else {
+      ipSec.style.display = 'block';
+      ipItems.innerHTML = `<div class="blk-empty">No IP filters active</div>`;
+    }
+  } catch (e) {}
+}
+
+// ══════════════════════════════════════════════════════
+//  LOG COMPILER
+// ══════════════════════════════════════════════════════
+async function loadLogs() {
+  try {
+    const res = await fetch(`${BASE}/logs?lines=30`);
+    const data = await res.json();
+    document.getElementById('logMeta').textContent = data.path || 'ghostvpn.log';
+    const box = document.getElementById('logBox');
+    box.textContent = data.lines.join('');
+    box.scrollTop = box.scrollHeight;
+  } catch (e) {}
+}
+
+// ══════════════════════════════════════════════════════
+//  BOOT INITIALIZATION
+// ══════════════════════════════════════════════════════
+window.onload = () => {
+  checkStatus();
+  checkLeak();
+  loadLogs();
+  
+  setInterval(checkStatus, 2000);
+  setInterval(loadLogs, 3000);
+};
+</script>
+</body>
+</html>

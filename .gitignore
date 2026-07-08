@@ -1,0 +1,17 @@
+# Python
+__pycache__/
+*.pyc
+.env
+venv/
+env/
+
+# Visual Studio
+.vs/
+*.pyproj.user
+
+# Sensitive files
+*.pem
+*.key
+
+# Log files
+*.log
