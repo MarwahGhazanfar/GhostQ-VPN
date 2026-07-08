@@ -122,4 +122,4 @@ GhostQ-VPN
 
 ## 📄 Academic Project
 
-This project was developed for academic purposes as part of the **Software Systems Design and Development (SSDD)** course.
+This project was developed for academic purposes as part of the **Network Security (NS)** course.
